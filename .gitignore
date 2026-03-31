@@ -1,0 +1,31 @@
+# Python virtual environment
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE settings
+.vscode/
+.idea/
+
+# Runtime logs and PID files
+*.log
+*.pid
+*.bak
+pkscreener-logs.txt
+results/Data/*
+
+# Generated runtime/cache/output data
+results/Cookies/
+results/DeleteThis/
+results/Reports/
+results/Indices/
+actions-data-scan/
+
+# OS noise
+.DS_Store
+Thumbs.db

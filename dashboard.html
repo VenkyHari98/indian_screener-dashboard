@@ -1,0 +1,1979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>India Stock Screener</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=IBM+Plex+Sans:wght@300;400;500&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:         #0d1117;
+    --bg2:        #141b26;
+    --surface:    #1a2333;
+    --surface2:   #1f2b3e;
+    --surface3:   #243148;
+    --orange:     #e8600a;
+    --orange-lt:  #f07c2e;
+    --orange-dim: rgba(232,96,10,0.13);
+    --orange-glow:rgba(232,96,10,0.07);
+    --red-acc:    #d04a02;
+    --bull:       #22c55e;
+    --bull-dim:   rgba(34,197,94,0.12);
+    --bear:       #ef4444;
+    --bear-dim:   rgba(239,68,68,0.12);
+    --warn:       #f59e0b;
+    --warn-dim:   rgba(245,158,11,0.12);
+    --info:       #38bdf8;
+    --text:       #f0f4f8;
+    --text2:      #8899aa;
+    --text3:      #4a5a6a;
+    --border:     rgba(255,255,255,0.06);
+    --border2:    rgba(255,255,255,0.11);
+    --border-o:   rgba(232,96,10,0.28);
+    --font-head:  'Playfair Display', Georgia, serif;
+    --font-body:  'IBM Plex Sans', sans-serif;
+    --font-mono:  'IBM Plex Mono', monospace;
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14px;line-height:1.5;min-height:100vh}
+  body::before{content:'';position:fixed;inset:0;background-image:repeating-linear-gradient(-45deg,transparent,transparent 40px,rgba(232,96,10,0.018) 40px,rgba(232,96,10,0.018) 41px);pointer-events:none;z-index:0}
+  body::after{content:'';position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--red-acc),var(--orange),var(--orange-lt));z-index:100}
+
+  .page{position:relative;z-index:1;max-width:1440px;margin:0 auto;padding:0 28px 80px}
+
+  /* MODE BANNER */
+  #modeBanner{display:flex;align-items:center;gap:10px;padding:8px 16px;font-size:11px;font-family:var(--font-mono);border-bottom:1px solid var(--border);margin-bottom:0}
+  #modeBanner.local{background:rgba(34,197,94,0.07);color:var(--bull);border-color:rgba(34,197,94,0.2)}
+  #modeBanner.remote{background:rgba(232,96,10,0.07);color:var(--orange-lt);border-color:var(--border-o)}
+  .mode-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  .local .mode-dot{background:var(--bull);box-shadow:0 0 8px var(--bull);animation:blink 2s infinite}
+  .remote .mode-dot{background:var(--orange)}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+  /* HEADER */
+  header{padding:28px 0 24px;border-bottom:1px solid var(--border);margin-bottom:26px;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:18px}
+  .brand-eyebrow{font-family:var(--font-mono);font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--orange);margin-bottom:5px}
+  .brand-title{font-family:var(--font-head);font-size:34px;font-weight:700;letter-spacing:-0.5px;line-height:1.1;color:var(--text)}
+  .brand-title span{color:var(--orange)}
+  .brand-sub{font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-top:4px}
+
+  .mpill{background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:10px 16px;display:flex;align-items:center;gap:16px}
+  .mpill-div{width:1px;height:34px;background:var(--border2)}
+  .mpill-name{font-size:9px;color:var(--text3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px}
+  .mpill-val{font-size:17px;font-weight:500;color:var(--text);font-family:var(--font-mono);margin:2px 0}
+  .mpill-chg{font-size:11px;font-family:var(--font-mono)}
+  .up{color:var(--bull)} .dn{color:var(--bear)}
+
+  /* METRICS */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+  .mc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px;position:relative;overflow:hidden;transition:border-color .2s,transform .15s}
+  .mc:hover{border-color:var(--border2);transform:translateY(-1px)}
+  .mc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px}
+  .mc.buy::after{background:var(--bull)} .mc.watch::after{background:var(--warn)} .mc.avoid::after{background:var(--bear)} .mc.total::after{background:var(--orange)}
+  .mc-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-family:var(--font-mono);margin-bottom:8px}
+  .mc-val{font-family:var(--font-head);font-size:32px;font-weight:700;line-height:1;margin-bottom:4px}
+  .mc-sub{font-size:11px;color:var(--text2);font-family:var(--font-mono)}
+  .mc.buy .mc-val{color:var(--bull)} .mc.watch .mc-val{color:var(--warn)} .mc.avoid .mc-val{color:var(--bear)} .mc.total .mc-val{color:var(--orange)}
+
+  /* LAYOUT */
+  .layout{display:grid;grid-template-columns:285px 1fr;gap:20px;align-items:start}
+
+  /* PANEL */
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;position:sticky;top:20px}
+  .panel-hd{font-family:var(--font-head);font-size:15px;font-weight:600;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+  .panel-hd::before{content:'';width:3px;height:16px;background:var(--orange);border-radius:2px;flex-shrink:0}
+  .cg{margin-bottom:18px}
+  .clbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-family:var(--font-mono);margin-bottom:7px;display:flex;align-items:center;gap:6px}
+  .tip{width:15px;height:15px;background:var(--surface2);border:1px solid var(--border2);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:var(--text2);cursor:help;position:relative;flex-shrink:0;font-family:var(--font-body)}
+  .tip:hover::after{content:attr(data-tip);position:absolute;left:20px;top:-6px;background:var(--surface3);border:1px solid var(--border-o);color:var(--text);font-size:11px;font-family:var(--font-body);padding:10px 13px;border-radius:8px;width:210px;z-index:200;line-height:1.55;text-transform:none;letter-spacing:0;font-weight:400;box-shadow:0 12px 32px rgba(0,0,0,.5);pointer-events:none}
+
+  select{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:var(--font-body);font-size:13px;padding:9px 12px;outline:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%238899aa' d='M5 7L0 2h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;cursor:pointer;transition:border-color .2s}
+  select:focus{border-color:var(--orange)}
+  .sv{font-family:var(--font-mono);font-size:13px;color:var(--orange);font-weight:500;text-align:right;margin-bottom:6px}
+  input[type=range]{width:100%;height:3px;background:var(--surface3);border-radius:2px;outline:none;appearance:none;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{appearance:none;width:15px;height:15px;border-radius:50%;background:var(--orange);box-shadow:0 0 8px rgba(232,96,10,.5);cursor:pointer}
+  .se{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:5px}
+  .tr{display:flex;gap:6px;flex-wrap:wrap}
+  .tb{padding:6px 11px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:12px;font-family:var(--font-body);cursor:pointer;transition:all .15s}
+  .tb:hover{border-color:var(--orange);color:var(--orange-lt)}
+  .tb.on{background:var(--orange-dim);border-color:var(--orange);color:var(--orange-lt)}
+  .div{border:none;border-top:1px solid var(--border);margin:18px 0}
+  .run{width:100%;padding:12px;background:var(--orange);border:none;border-radius:8px;color:#fff;font-family:var(--font-head);font-size:14px;font-weight:600;cursor:pointer;transition:background .2s,transform .1s;display:flex;align-items:center;justify-content:center;gap:8px}
+  .run:hover{background:var(--orange-lt)} .run:active{transform:scale(.98)} .run:disabled{opacity:.5;cursor:not-allowed}
+  .ghost{width:100%;padding:9px;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--text2);font-family:var(--font-body);font-size:12px;cursor:pointer;transition:all .15s;margin-top:8px}
+  .ghost:hover{border-color:var(--orange);color:var(--orange-lt)}
+
+  /* SKILL */
+  .skill-bar{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:20px;flex-wrap:wrap}
+  .sbl{font-size:11px;color:var(--text2);font-family:var(--font-mono)}
+  .sbs{display:flex;gap:5px;margin-left:auto}
+  .sb{padding:4px 11px;border-radius:5px;border:1px solid var(--border2);background:transparent;font-size:11px;font-family:var(--font-body);cursor:pointer;color:var(--text2);transition:all .15s}
+  .sb.on.beg{background:var(--bull-dim);border-color:var(--bull);color:var(--bull)}
+  .sb.on.mid{background:var(--warn-dim);border-color:var(--warn);color:var(--warn)}
+  .sb.on.adv{background:var(--orange-dim);border-color:var(--orange);color:var(--orange-lt)}
+  .eb{background:var(--orange-glow);border:1px solid var(--border-o);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:18px;display:none}
+  .eb.on{display:block} .eb strong{color:var(--orange-lt)}
+
+  /* RESULTS */
+  .results{display:flex;flex-direction:column;gap:16px}
+  .rhd{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  .rtitle{font-family:var(--font-head);font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+  .stag{font-size:10px;font-family:var(--font-mono);color:var(--text3);padding:3px 8px;border:1px solid var(--border);border-radius:4px;font-weight:400}
+  .rmeta{font-size:11px;color:var(--text3);font-family:var(--font-mono)}
+  .chips{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+  .ch{padding:5px 12px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:11px;font-family:var(--font-body);cursor:pointer;transition:all .15s}
+  .ch:hover{border-color:var(--orange);color:var(--orange-lt)}
+  .ch.on{background:var(--orange-dim);border-color:var(--orange);color:var(--orange-lt)}
+  input.srch{width:160px;background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:var(--font-body);font-size:12px;padding:6px 11px;outline:none;transition:border-color .2s}
+  input.srch:focus{border-color:var(--orange)}
+  input.srch::placeholder{color:var(--text3)}
+
+  /* TABLE */
+  .tw{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  thead tr{background:var(--surface2);border-bottom:1px solid var(--border2)}
+  th{padding:11px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:500;white-space:nowrap;cursor:pointer;user-select:none;transition:color .15s}
+  th:hover{color:var(--orange-lt)} th.srt{color:var(--orange-lt)}
+  th .ar{margin-left:3px;opacity:.3} th.srt .ar{opacity:1}
+  tbody tr{border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer}
+  tbody tr:last-child{border-bottom:none}
+  tbody tr:hover{background:rgba(232,96,10,0.04)}
+  td{padding:11px 14px;font-size:13px;white-space:nowrap}
+  .sn{font-family:var(--font-head);font-weight:600;font-size:14px;color:var(--text);display:block}
+  .ss{font-size:10px;color:var(--text3);font-family:var(--font-mono);display:block;margin-top:1px}
+  .mo{font-family:var(--font-mono);font-weight:500}
+  .bt{color:var(--bull)} .brt{color:var(--bear)} .wt{color:var(--warn)}
+
+  .vw{display:flex;align-items:center;gap:7px}
+  .vb{width:50px;height:3px;background:var(--surface3);border-radius:2px;overflow:hidden}
+  .vf{height:100%;border-radius:2px;background:var(--orange)}
+
+  .rw{min-width:90px}
+  .rb{height:3px;background:var(--surface3);border-radius:2px;position:relative;margin-top:5px}
+  .rf{position:absolute;left:0;top:0;height:100%;width:100%;background:linear-gradient(90deg,var(--bear),var(--warn),var(--bull));border-radius:2px}
+  .rd{width:7px;height:7px;border-radius:50%;background:var(--text);border:1.5px solid var(--bg);position:absolute;top:-2px;transform:translateX(-50%)}
+  .re{display:flex;justify-content:space-between;font-size:9px;color:var(--text3);font-family:var(--font-mono);margin-top:3px}
+  .rp{font-size:10px;color:var(--text2);font-family:var(--font-mono)}
+
+  .bdg{display:inline-block;padding:3px 9px;border-radius:4px;font-size:10px;font-family:var(--font-mono);font-weight:500;text-transform:uppercase;letter-spacing:.5px}
+  .bdg.breakout{background:var(--bull-dim);color:var(--bull);border:1px solid rgba(34,197,94,.2)}
+  .bdg.consolidating{background:var(--warn-dim);color:var(--warn);border:1px solid rgba(245,158,11,.2)}
+  .bdg.ema{background:rgba(56,189,248,.1);color:var(--info);border:1px solid rgba(56,189,248,.2)}
+  .bdg.btst{background:var(--orange-dim);color:var(--orange-lt);border:1px solid var(--border-o)}
+  .bdg.volume{background:rgba(99,102,241,.1);color:#a5b4fc;border:1px solid rgba(99,102,241,.2)}
+  .bdg.weak{background:var(--bear-dim);color:var(--bear);border:1px solid rgba(239,68,68,.2)}
+
+  .sig{display:inline-block;padding:4px 10px;border-radius:5px;font-family:var(--font-head);font-size:11px;font-weight:600}
+  .sig.buy{background:var(--bull-dim);color:var(--bull)}
+  .sig.watch{background:var(--warn-dim);color:var(--warn)}
+  .sig.avoid{background:var(--bear-dim);color:var(--bear)}
+
+  .ht{position:relative;cursor:help}
+  .ht::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--surface3);border:1px solid var(--border-o);color:var(--text);font-size:11px;font-family:var(--font-body);padding:9px 12px;border-radius:8px;width:220px;z-index:200;line-height:1.55;white-space:normal;box-shadow:0 10px 30px rgba(0,0,0,.5);pointer-events:none;opacity:0;transition:opacity .15s}
+  .ht:hover::after{opacity:1}
+
+  .empty{text-align:center;padding:60px 20px;color:var(--text3);font-family:var(--font-mono);font-size:13px;display:none}
+  .empty.on{display:block} .empty strong{color:var(--orange)}
+
+  /* LEGEND */
+  .legend{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;display:flex;gap:20px;flex-wrap:wrap}
+  .ltit{font-size:10px;color:var(--text3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;flex-basis:100%;margin-bottom:4px}
+  .li{display:flex;gap:9px;flex:1;min-width:155px}
+  .ld{width:7px;height:7px;border-radius:50%;margin-top:4px;flex-shrink:0}
+  .lt strong{font-size:12px;color:var(--text);display:block;font-weight:500}
+  .lt span{font-size:11px;color:var(--text2);line-height:1.4}
+
+  /* FOOTER */
+  footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px}
+  .fl{font-size:11px;color:var(--text3);font-family:var(--font-mono);line-height:1.8}
+  .fr{font-size:11px;color:var(--text3);font-family:var(--font-mono);text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+  .fr a{color:var(--orange);text-decoration:none}
+  .fr a:hover{text-decoration:underline}
+
+
+  @keyframes rowIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+  tbody tr{animation:rowIn .25s ease both}
+  tbody tr:nth-child(1){animation-delay:.02s} tbody tr:nth-child(2){animation-delay:.04s}
+  tbody tr:nth-child(3){animation-delay:.06s} tbody tr:nth-child(4){animation-delay:.08s}
+  tbody tr:nth-child(5){animation-delay:.10s} tbody tr:nth-child(6){animation-delay:.12s}
+  tbody tr:nth-child(7){animation-delay:.14s} tbody tr:nth-child(8){animation-delay:.16s}
+
+  @media(max-width:960px){.layout{grid-template-columns:1fr}.panel{position:static}.metrics{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:520px){.brand-title{font-size:24px}.metrics{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<div id="modeBanner" class="remote">
+  <span class="mode-dot"></span>
+  <span id="modeText">Detecting mode...</span>
+  <span style="margin-left:auto;opacity:.6;font-size:10px" id="modeHint"></span>
+</div>
+
+<!-- ERROR BANNER -->
+<div id="errorBanner" style="display:none;background:rgba(239,68,68,0.12);border-left:3px solid #ef4444;padding:12px 16px;margin:0;color:#ef4444;font-size:12px;font-family:var(--font-mono);line-height:1.6;max-height:300px;overflow-y:auto;">
+  <strong style="color:#ef4444">⚠ Error/Warning:</strong> <span id="errorMsg"></span>
+  <div style="margin-top:8px;font-size:10px;opacity:0.7;"><strong>Debug Output (first 500 chars):</strong></div>
+  <div id="debugMsg" style="color:#999;font-size:10px;background:rgba(0,0,0,0.2);padding:8px;border-radius:4px;margin-top:4px;white-space:pre-wrap;word-break:break-all;"></div>
+  <div style="margin-top:8px;font-size:10px;opacity:0.7;"><strong>Server Logs:</strong></div>
+  <div id="serverLogs" style="color:#999;font-size:9px;background:rgba(0,0,0,0.2);padding:8px;border-radius:4px;margin-top:4px;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto;"></div>
+</div>
+
+<div class="page">
+
+<header>
+  <div>
+    <div class="brand-eyebrow">NSE · BSE · India Equities</div>
+    <div class="brand-title">India Stock <span>Screener</span></div>
+    <div class="brand-sub">Powered by PKScreener &nbsp;·&nbsp; <span id="sessionLabel">—</span></div>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px">
+    <div class="mpill">
+      <div>
+        <div class="mpill-name">Nifty 50</div>
+        <div class="mpill-val" id="niftyVal">—</div>
+        <div class="mpill-chg" id="niftyChg">—</div>
+      </div>
+      <div class="mpill-div"></div>
+      <div>
+        <div class="mpill-name">Sensex</div>
+        <div class="mpill-val" id="sensexVal">—</div>
+        <div class="mpill-chg" id="sensexChg">—</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono)" id="istNow">IST: —</div>
+    <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono)" id="lastUpdated">Last scan: —</div>
+  </div>
+</header>
+
+<div class="skill-bar" style="margin-top:10px">
+  <span class="sbl">Workspace:</span>
+  <div class="sbs">
+    <button class="sb mid on" id="tabDash" onclick="setView('dashboard',this)">Dashboard</button>
+    <button class="sb adv" id="tabConfig" onclick="setView('config',this)">Config Studio</button>
+  </div>
+  <span style="font-size:10px;color:var(--text3);margin-left:8px" id="connState">Connection: checking...</span>
+</div>
+
+<div id="dashboardView">
+
+<!-- METRICS -->
+<div class="metrics">
+  <div class="mc buy"><div class="mc-lbl">Breakout / Buy</div><div class="mc-val" id="mBuy">0</div><div class="mc-sub">Strong signals</div></div>
+  <div class="mc watch"><div class="mc-lbl">Watch List</div><div class="mc-val" id="mWatch">0</div><div class="mc-sub">Near breakout</div></div>
+  <div class="mc avoid"><div class="mc-lbl">Avoid</div><div class="mc-val" id="mAvoid">0</div><div class="mc-sub">Weak / bearish</div></div>
+  <div class="mc total"><div class="mc-lbl">Total Scanned</div><div class="mc-val" id="mTotal">0</div><div class="mc-sub">Stocks analysed</div></div>
+</div>
+
+<div class="layout">
+
+  <!-- PANEL -->
+  <div class="panel">
+    <div class="panel-hd">Scan Controls</div>
+
+    <div class="cg">
+      <div class="clbl">Step 1 — Menu <span class="tip" data-tip="Top-level PKScreener menu. X = Scanners.">?</span></div>
+      <select id="menuSel" onchange="onGuidedSelectionChange(0)">
+        <option value="X" selected>X - Scanners</option>
+      </select>
+    </div>
+
+    <div class="cg">
+      <div class="clbl">Step 2 — Index / Universe <span class="tip" data-tip="Select the stock universe. Enabled after Step 1.">?</span></div>
+      <select id="idxSel" onchange="onGuidedSelectionChange(1)" disabled>
+        <option value="">— select menu first —</option>
+      </select>
+    </div>
+
+    <div class="cg">
+      <div class="clbl">Step 3 — Scan Type <span class="tip" data-tip="Select scanner criteria. Enabled after Step 2.">?</span></div>
+      <select id="scnSel" onchange="onGuidedSelectionChange(2)" disabled>
+        <option value="">— select universe first —</option>
+      </select>
+      <div id="scannerTipText" style="margin-top:8px;font-size:11px;line-height:1.5;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;display:none"></div>
+    </div>
+
+    <div id="guidedExtraLevels"></div>
+
+    <div id="menuBuilderStatus" style="margin-bottom:6px;font-size:11px;font-family:var(--font-mono);min-height:14px;color:var(--text3)"></div>
+
+    <div class="cg">
+      <div class="clbl">Built Command</div>
+      <div id="builtOptionPreview" style="font-size:11px;line-height:1.5;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:var(--font-mono)">—</div>
+    </div>
+
+    <div class="cg">
+      <div class="clbl">Confirmed Scanner</div>
+      <div id="lockedOptionDisplay" style="font-size:11px;line-height:1.5;color:#22c55e;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:var(--font-mono)">Not confirmed yet</div>
+    </div>
+
+    <button id="proceedBtn" onclick="confirmGuidedOption()" disabled style="width:100%;margin-bottom:6px;padding:9px 0;border-radius:8px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;opacity:0.45;transition:opacity .2s">✔ Confirm Selection</button>
+
+    <div class="cg">
+      <div class="clbl">Explanation Level <span class="tip" data-tip="Switch how scanner guidance is explained: Beginner (plain language), Intermediate (rules + signals), Advanced (execution and risk context).">?</span></div>
+      <div class="sbs" id="skillPills">
+        <button class="sb on" onclick="setSkill('beginner', this)">Beginner</button>
+        <button class="sb mid" onclick="setSkill('intermediate', this)">Intermediate</button>
+        <button class="sb adv" onclick="setSkill('advanced', this)">Advanced</button>
+      </div>
+    </div>
+
+    <hr class="div">
+
+    <button class="run" id="runBtn" onclick="runScan()" disabled style="opacity:0.45">▶ Run Scan</button>
+    <button class="ghost" id="ghBtn" style="display:none" onclick="triggerGitHub()">⬆ Trigger GitHub Scan</button>
+    <div id="scanStatus" style="margin-top:8px;font-size:11px;font-family:var(--font-mono);min-height:16px;"></div>
+    <div id="scanCommand" style="margin-top:6px;font-size:10px;color:var(--text3);font-family:var(--font-mono);word-break:break-all;"></div>
+
+    <hr class="div">
+
+    <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);line-height:1.85">
+      <div style="color:var(--text2);font-weight:500;margin-bottom:4px;font-family:var(--font-body)">How to use</div>
+      1 · Pick Step 1 → 2 → 3 dropdowns (each unlocks next)<br>
+      2 · More sub-filters appear automatically if available<br>
+      3 · Click <strong>Confirm Selection</strong> to lock scanner<br>
+      4 · Click <strong>Run Scan</strong> to execute &amp; view results
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results">
+
+    <div class="rhd">
+      <div>
+        <div class="rtitle">Results <span class="stag" id="stag">No scan run yet</span></div>
+        <div class="rmeta" id="rmeta">Run a scan to see stock results</div>
+      </div>
+      <div class="chips"><input type="text" class="srch" placeholder="Search symbol…" id="srchBox" oninput="filterTable()"></div>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortBy(0)">Stock <span class="ar">↕</span></th>
+            <th onclick="sortBy(1)">LTP ₹ <span class="ar">↕</span></th>
+            <th onclick="sortBy(2)">% Chg <span class="ar">↕</span></th>
+            <th onclick="sortBy(3)">Volume <span class="ar">↕</span></th>
+            <th>52W Range</th>
+            <th onclick="sortBy(5)">RSI <span class="ar">↕</span></th>
+            <th>Pattern</th>
+            <th>Signal</th>
+            <th onclick="sortBy(7)">1-Day <span class="ar">↕</span></th>
+            <th onclick="sortBy(8)">2-Day <span class="ar">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="empty on" id="emptyState">No data yet — select filters and click <strong>Run Scan</strong></div>
+    </div>
+
+    <!-- LEGEND -->
+    <div class="legend">
+      <div class="ltit">Column Guide</div>
+      <div class="li"><div class="ld" style="background:var(--bull)"></div><div class="lt"><strong>LTP</strong><span id="lLTP">Last traded price in ₹. Compare with 52W range for cycle context.</span></div></div>
+      <div class="li"><div class="ld" style="background:var(--orange)"></div><div class="lt"><strong>Volume</strong><span id="lVOL">Today's volume vs 20-day avg. 2×+ confirms breakout with institutional activity.</span></div></div>
+      <div class="li"><div class="ld" style="background:var(--info)"></div><div class="lt"><strong>RSI</strong><span id="lRSI">Relative Strength Index (14). 55–70 = bullish momentum. 70+ = overbought caution.</span></div></div>
+      <div class="li"><div class="ld" style="background:var(--warn)"></div><div class="lt"><strong>1-Day / 2-Day</strong><span id="lRET">Backtested returns after this pattern was detected historically on NSE.</span></div></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="panel" style="position:static;margin-top:18px">
+  <div class="panel-hd">Backend Terminal Output</div>
+  <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:8px">
+    Live stream from backend service. Updates every 2 seconds.
+  </div>
+  <textarea id="backendTerminalBox" readonly style="width:100%;min-height:260px;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:var(--font-mono);font-size:12px;padding:10px 12px;outline:none;line-height:1.45;white-space:pre;resize:vertical"></textarea>
+</div>
+
+<div id="configView" style="display:none">
+  <div class="panel" style="position:static;margin-top:18px">
+    <div class="panel-hd">Config Studio</div>
+    <div class="cg">
+      <div class="clbl">Auth Token (optional) <span class="tip" data-tip="Set this only if backend requires config auth. Token is used for config load/save API calls.">?</span></div>
+      <input id="cfgToken" type="password" placeholder="Enter config token if required" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:var(--font-body);font-size:13px;padding:9px 12px;outline:none">
+    </div>
+    <div class="cg">
+      <div class="tr">
+        <button class="tb on" onclick="loadConfigFromBackend()">Load Config</button>
+        <button class="tb" onclick="saveConfigToBackend()">Save Config</button>
+      </div>
+    </div>
+    <div class="cg">
+      <div class="clbl">PKScreener INI (all sections) <span class="tip" data-tip="You can edit every key here. Save writes back to backend pkscreener.ini file.">?</span></div>
+      <textarea id="cfgRaw" style="width:100%;min-height:380px;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:var(--font-mono);font-size:12px;padding:10px 12px;outline:none;line-height:1.45"></textarea>
+    </div>
+    <div id="cfgStatus" style="margin-top:8px;font-size:11px;font-family:var(--font-mono);color:var(--text2)">Status: idle</div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="fl">
+    India Stock Screener &nbsp;·&nbsp; NSE / BSE Data<br>
+    For informational purposes only. Not financial advice.<br>
+    Data sourced from NSE via PKScreener open-source library.
+  </div>
+  <div class="fr">
+    <div>Source: <a href="https://github.com/VenkyHari98/screener-dashboard" target="_blank">github.com/VenkyHari98/screener-dashboard</a></div>
+    <div>Data via: <a href="https://github.com/pkjmesra/PKScreener" target="_blank">PKScreener (Open Source)</a></div>
+    <div id="footerMode" style="color:var(--text3)">—</div>
+  </div>
+</footer>
+
+</div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+let data=[], skill='beginner', sCol=-1, sDir=1;
+let activeView = 'dashboard';
+const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+const API_BASE_CANDIDATES = ['http://127.0.0.1:5000', 'http://127.0.0.1:5050', 'http://localhost:5000', 'http://localhost:5050'];
+const SCAN_REQUEST_TIMEOUT_MS = 930000;
+let apiBase = null;
+let terminalPollTimer = null;
+let runtimePollTimer = null;
+const SCANNER_TOOLTIPS_BY_OPTION = {};
+const SCANNER_INSIGHT_CACHE = {};
+const GUIDED_MENU_STATE = {
+  initialized: false,
+  topPath: '',
+  confirmedOption: '',
+  leafReached: false,
+  scanInProgress: false,
+};
+
+function getScanKeyFromValue(value) {
+  const v = String(value || '').trim();
+  if (/^\d+$/.test(v)) {
+    return v;
+  }
+  const m = v.match(/^X:\d+:(\d+)/i);
+  return m ? m[1] : '';
+}
+
+const SCANNER_DETAIL_TIPS = {};
+
+const INDEX_CONTEXT = {
+  '0': 'All NSE Stocks',
+  '1': 'Nifty 50',
+  '2': 'Nifty Next 50',
+  '3': 'Nifty 100',
+  '4': 'Nifty 200',
+  '5': 'Nifty 500',
+  '8': 'Nifty Smallcap 250',
+  '11': 'Nifty Midcap 150',
+  '12': 'Nifty 500'
+};
+
+const LEVEL2_CRITERIA = {
+  '0': 'Full Screening',
+  '1': 'Probable Breakouts/Breakdowns',
+  '2': "Today's Breakouts/Breakdowns",
+  '3': 'Consolidating Stocks',
+  '4': 'Lowest Volume Early Breakout Detection',
+  '5': 'RSI Screening',
+  '6': 'Reversal Signals',
+  '7': 'Chart Pattern Signals',
+  '8': 'CCI Range Filters',
+  '9': 'Volume Gainers',
+  '10': '2%+ Up for 3 Days',
+  '11': 'Short Term Bullish Ichimoku',
+  '12': 'Intraday Price and Volume Breakout',
+  '13': 'Bullish RSI and MACD',
+  '14': 'NR4 Daily',
+  '15': '52 Week Low Breakdown (Sell)',
+  '16': '10 Day Low Breakdown (Sell)',
+  '17': '52 Week High Breakout',
+  '18': 'Aroon Bullish Crossover',
+  '19': 'MACD Histogram Below Zero (Sell)',
+  '20': 'Bullish for Next Day',
+  '21': 'MF and FII Popular Stocks',
+  '22': 'Stock Performance Buckets',
+  '23': 'Breaking Out Now',
+  '24': 'Higher Highs Lows and Close (SuperTrend)',
+  '25': 'Lower Highs Lows (Reversal Watch)',
+  '26': 'Split Bonus Dividend Events',
+  '27': 'ATR Cross',
+  '28': 'Bullish Higher Opens',
+  '29': 'Intraday Bid Ask Build-up',
+  '30': 'ATR Trailing Stops',
+  '31': 'High Momentum (RSI MFI CCI)',
+  '32': 'Intraday Breakout Breakdown Setup',
+  '33': 'Potential Profitable Setups',
+  '34': 'Bullish Anchored VWAP',
+  '35': 'Perfect Short Sells (Futures)',
+  '36': 'Probable Short Sells (Futures)',
+  '37': 'Short Sell Candidates (Volume SMA)',
+  '38': 'Intraday Short Sell (PSAR / Volume SMA)',
+  '39': 'IPO First Day Bullish Break',
+  '40': 'Price Action Cross Logic',
+  '41': 'Pivot Point Cross Logic',
+  '42': 'Super Gainers',
+  '43': 'Super Losers',
+  '44': 'Strong Buy Signals (Multi-Indicator)',
+  '45': 'Strong Sell Signals (Multi-Indicator)',
+  '46': 'All Buy Signals',
+  '47': 'All Sell Signals',
+  '50': 'Last Screened Results'
+};
+
+const LEVEL3_REVERSAL = {
+  '1': 'Buy Signals (Bullish Reversal)',
+  '2': 'Sell Signals (Bearish Reversal)',
+  '3': 'Momentum Gainers (Rising Bullish Momentum)',
+  '4': 'Reversal at Moving Average',
+  '5': 'Volume Spread Analysis Reversal',
+  '6': 'Narrow Range (NRx) Reversal',
+  '7': 'Lorentzian Classifier',
+  '8': 'PSAR and RSI Reversal',
+  '9': 'Rising RSI',
+  '10': 'RSI MA Reversal'
+};
+
+const LEVEL3_CHART = {
+  '1': 'Bullish Inside Bar',
+  '2': 'Bearish Inside Bar',
+  '3': 'Confluence (50 and 200 MA/EMA)',
+  '4': 'VCP Pattern',
+  '5': 'Trendline Support Bounce',
+  '6': 'Bollinger TTM Squeeze',
+  '7': 'Candlestick Pattern Filter',
+  '8': 'VCP (Mark Minervini)',
+  '9': 'Moving Average Signals'
+};
+
+const LEVEL3_POPULAR = {
+  '1': 'MF/FII Bought or Sold',
+  '2': 'MF/FII Holdings by Count',
+  '3': 'MF/FII Net Ownership Increased',
+  '4': 'Dividend Yield',
+  '5': 'Only MF Net Ownership Increased',
+  '6': 'Only MF Net Ownership Decreased',
+  '7': 'MF/FII Net Ownership Decreased',
+  '8': 'Fair Value Buy Opportunities',
+  '9': 'Fair Value Sell Opportunities'
+};
+
+const LEVEL3_PERFORMANCE = {
+  '1': 'Short Term Performance',
+  '2': 'Medium Term Performance',
+  '3': 'Long Term Performance'
+};
+
+const LEVEL3_POTENTIAL = {
+  '1': 'Frequent Highs with Bullish MAs',
+  '2': 'Bullish vs Previous Day Open/Close with Volume',
+  '3': 'FnO >2% above 50MA/200MA'
+};
+
+const LEVEL4_LORENTZ = {
+  '1': 'Buy Side Classifier',
+  '2': 'Sell Side Classifier',
+  '3': 'Any Side'
+};
+
+function cleanOptionPart(part) {
+  return String(part || '').replace(/>/g, '').trim();
+}
+
+function parseOptionDetail(value) {
+  const raw = String(value || '').trim();
+  const parts = raw.split(':').map(cleanOptionPart);
+  const menu = (parts[0] || '').toUpperCase();
+  const index = parts[1] || '';
+  const scan = parts[2] || '';
+  const sub1 = parts[3] || '';
+  const sub2 = parts[4] || '';
+  const pipeline = raw.includes('>');
+  const tfMatch = raw.match(/\bi\s*([0-9]+m)\b/i);
+  return {
+    raw,
+    menu,
+    index,
+    scan,
+    sub1,
+    sub2,
+    pipeline,
+    timeframe: tfMatch ? tfMatch[1].toLowerCase() : ''
+  };
+}
+
+function getSubFilterText(ctx) {
+  if (!ctx.sub1) return '';
+  if (ctx.scan === '6') {
+    const base = LEVEL3_REVERSAL[ctx.sub1] || ('Reversal filter ' + ctx.sub1);
+    if ((ctx.sub1 === '7' || ctx.sub1 === '10') && ctx.sub2) {
+      const lz = LEVEL4_LORENTZ[ctx.sub2] || ('Lorentz mode ' + ctx.sub2);
+      return base + ' | ' + lz;
+    }
+    return base;
+  }
+  if (ctx.scan === '7') {
+    return LEVEL3_CHART[ctx.sub1] || ('Chart filter ' + ctx.sub1);
+  }
+  if (ctx.scan === '21') return LEVEL3_POPULAR[ctx.sub1] || ('Popular-stock filter ' + ctx.sub1);
+  if (ctx.scan === '22') return LEVEL3_PERFORMANCE[ctx.sub1] || ('Performance bucket ' + ctx.sub1);
+  if (ctx.scan === '33') return LEVEL3_POTENTIAL[ctx.sub1] || ('Potential setup ' + ctx.sub1);
+  if (ctx.scan === '30' || ctx.scan === '32') return LEVEL4_LORENTZ[ctx.sub1] || ('Classifier mode ' + ctx.sub1);
+  return 'Additional filter ' + ctx.sub1;
+}
+
+function escapeHtml(text) {
+  return String(text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function insightForOption(value, labelText) {
+  const key = String(value || '').trim();
+  if (SCANNER_INSIGHT_CACHE[key]) return SCANNER_INSIGHT_CACHE[key];
+
+  const ctx = parseOptionDetail(key);
+  const universe = INDEX_CONTEXT[ctx.index] || ('Universe index ' + (ctx.index || 'default'));
+  const criteria = LEVEL2_CRITERIA[ctx.scan] || String(labelText || 'Scanner criteria').replace(/\s*\(.*\)\s*$/, '').trim();
+  const subFilter = getSubFilterText(ctx);
+  const tf = ctx.timeframe ? ('Timeframe: ' + ctx.timeframe.toUpperCase()) : 'Timeframe: default session';
+  const pipelineText = ctx.pipeline ? 'Pipeline mode: output can feed the next scanner stage.' : 'Single-stage mode: this scanner returns direct candidates.';
+
+  let outcome = 'Output: a watchlist ranked by current technical fit for this condition.';
+  let ideal = 'Ideal candidate: liquid stock with clean structure and supportive volume behavior.';
+  let differentiation = 'Differentiate by checking if price confirms with volume and closes beyond the trigger level.';
+
+  if (ctx.scan === '23' || ctx.scan === '7') {
+    outcome = 'Output: stocks attempting a breakout from consolidation/resistance zones.';
+    ideal = 'Ideal candidate: tight range, rising relative volume, and close above breakout level.';
+    differentiation = 'Positive breakout closes above resistance with stronger volume; weak breakout spikes intraday but fails to hold close.';
+  } else if (ctx.scan === '9') {
+    outcome = 'Output: momentum candidates based on RSI/strength behavior.';
+    ideal = 'Ideal candidate: RSI rising with price making higher highs and no heavy sell-volume rejection.';
+    differentiation = 'Constructive momentum has rising RSI slope and stable pullbacks; noisy momentum shows flat RSI with choppy price.';
+  } else if (ctx.scan === '6') {
+    outcome = 'Output: reversal candidates filtered by reversal subtype.';
+    ideal = 'Ideal candidate: exhaustion move followed by reversal candle/indicator confirmation near support or key average.';
+    differentiation = 'Bullish reversal aligns with higher low + improving momentum; failed reversal breaks recent swing low quickly.';
+  } else if (ctx.scan === '29' || ctx.scan === '31') {
+    outcome = 'Output: fast-momentum names where participation is building.';
+    ideal = 'Ideal candidate: trend continuation with price above VWAP/short EMA and volume expansion.';
+    differentiation = 'Quality momentum sustains above trigger after first pullback; weak momentum mean-reverts below trigger fast.';
+  } else if (ctx.scan === '1' || ctx.scan === '2') {
+    outcome = 'Output: breakout/breakdown candidates before or at trigger time.';
+    ideal = 'Ideal candidate: clear level test with compressed range before expansion.';
+    differentiation = 'High-quality setups show expansion candle plus participation; low-quality setups break level without follow-through.';
+  } else if (ctx.scan === '42') {
+    outcome = 'Output: strongest gainers already showing momentum leadership.';
+    ideal = 'Ideal candidate: strong trend, healthy pullbacks, and broad-market relative strength.';
+    differentiation = 'Prefer names with orderly trend and manageable volatility, avoid one-candle spikes without base.';
+  }
+
+  const beginner = [
+    'What it does: Finds stocks matching ' + criteria + (subFilter ? (' using ' + subFilter) : '') + '.',
+    'What it signifies: This indicates where buyers/sellers may be taking control in ' + universe + '.',
+    ideal,
+    outcome
+  ].join(' ');
+
+  const intermediate = [
+    'Driver logic: Universe ' + universe + '; criteria ' + criteria + (subFilter ? ('; sub-filter ' + subFilter + '.') : '.'),
+    tf + '. ' + pipelineText,
+    outcome,
+    differentiation
+  ].join(' ');
+
+  const advanced = [
+    'Execution context: Treat this as a hypothesis, not a signal by itself.',
+    'Confirm with structure (support/resistance), participation (relative volume), and close quality.',
+    'Risk framing: define invalidation before entry and size by volatility.',
+    differentiation
+  ].join(' ');
+
+  const insight = { beginner, intermediate, advanced, criteria, universe, tf, subFilter };
+  SCANNER_INSIGHT_CACHE[key] = insight;
+  return insight;
+}
+
+function getScannerTooltipText(value, labelText) {
+  const rawValue = String(value || '').trim();
+  if (/^\d+$/.test(rawValue)) {
+    const criteria = LEVEL2_CRITERIA[rawValue] || ('Scanner ' + rawValue);
+    return criteria + '. Select additional filters if shown.';
+  }
+
+  const byOption = SCANNER_TOOLTIPS_BY_OPTION[String(value || '').trim()];
+  if (byOption) {
+    return byOption;
+  }
+
+  const insight = insightForOption(value, labelText);
+  if (insight && insight[skill]) {
+    return insight[skill];
+  }
+
+  const scanKey = getScanKeyFromValue(value);
+  if (scanKey && SCANNER_DETAIL_TIPS[scanKey]) {
+    return SCANNER_DETAIL_TIPS[scanKey];
+  }
+
+  const optionText = String(labelText || value || '').trim();
+  if (optionText) {
+    return 'PKScreener scanner option ' + optionText + '. Option code: ' + String(value || '').trim();
+  }
+  return 'PKScreener scanner option from your configured scanner catalog.';
+}
+
+function refreshScannerOptionTooltips() {
+  const sel = document.getElementById('scnSel');
+  const tipBox = document.getElementById('scannerTipText');
+  if (!sel) return;
+
+  Array.from(sel.options || []).forEach(opt => {
+    const tip = getScannerTooltipText(opt.value, opt.textContent);
+    opt.title = tip;
+  });
+
+  if (sel.selectedIndex >= 0) {
+    const selectedOpt = sel.options[sel.selectedIndex];
+    const selectedTip = selectedOpt ? (selectedOpt.title || getScannerTooltipText(selectedOpt.value, selectedOpt.textContent)) : '';
+    const insight = selectedOpt ? insightForOption(selectedOpt.value, selectedOpt.textContent) : null;
+    sel.title = selectedTip;
+    if (tipBox) {
+      tipBox.style.display = selectedTip ? 'block' : 'none';
+      if (insight && insight[skill]) {
+        const hdr = insight.criteria + (insight.subFilter ? ' \u2022 ' + insight.subFilter : '');
+        tipBox.innerHTML = `<div style="font-size:11px;line-height:1.55;color:var(--text2)">
+          <div style="font-weight:600;color:var(--text);margin-bottom:6px">${escapeHtml(hdr)}</div>
+          <div style="margin-bottom:6px;color:var(--text3)"><strong>Universe:</strong> ${escapeHtml(insight.universe)} &middot; <strong>${escapeHtml(insight.tf)}</strong></div>
+          <div>${escapeHtml(insight[skill])}</div>
+        </div>`;
+      } else {
+        tipBox.innerHTML = escapeHtml(selectedTip);
+      }
+    }
+  }
+}
+
+function parseScannerOption(value) {
+  const raw = String(value || '').trim();
+  const parts = raw.split(':');
+  const menu = (parts[0] || '').toUpperCase();
+  const indexNum = Number(parts[1]);
+  const scanNum = Number(parts[2]);
+  return {
+    raw,
+    menu,
+    indexNum: Number.isFinite(indexNum) ? indexNum : Number.MAX_SAFE_INTEGER,
+    scanNum: Number.isFinite(scanNum) ? scanNum : Number.MAX_SAFE_INTEGER,
+  };
+}
+
+function scannerSortRank(menu) {
+  // Keep common scan families first; unknown families are sorted after known ones.
+  const order = {
+    X: 1,
+    C: 2,
+    D: 3,
+    P: 4,
+  };
+  return Object.prototype.hasOwnProperty.call(order, menu) ? order[menu] : 99;
+}
+
+function sortScanners(scanners) {
+  return [...scanners].sort((a, b) => {
+    const av = String((a && (a.option || a.id)) || '').trim();
+    const bv = String((b && (b.option || b.id)) || '').trim();
+    const al = String((a && a.label) || av).trim();
+    const bl = String((b && b.label) || bv).trim();
+
+    const pa = parseScannerOption(av);
+    const pb = parseScannerOption(bv);
+
+    const rankDiff = scannerSortRank(pa.menu) - scannerSortRank(pb.menu);
+    if (rankDiff !== 0) return rankDiff;
+
+    const menuDiff = pa.menu.localeCompare(pb.menu);
+    if (menuDiff !== 0) return menuDiff;
+
+    const indexDiff = pa.indexNum - pb.indexNum;
+    if (indexDiff !== 0) return indexDiff;
+
+    const scanDiff = pa.scanNum - pb.scanNum;
+    if (scanDiff !== 0) return scanDiff;
+
+    return al.localeCompare(bl, undefined, { sensitivity: 'base', numeric: true });
+  });
+}
+
+function getApiBaseFromQuery() {
+  try {
+    const params = new URLSearchParams(location.search);
+    const value = (params.get('api') || '').trim();
+    if (!value) return null;
+    return value.replace(/\/$/, '');
+  } catch (_) {
+    return null;
+  }
+}
+
+async function resolveApiBase() {
+  if (!isLocal) return null;
+
+  const explicit = getApiBaseFromQuery();
+  const candidates = explicit ? [explicit, ...API_BASE_CANDIDATES.filter(c => c !== explicit)] : API_BASE_CANDIDATES;
+  for (const base of candidates) {
+    try {
+      await apiRequest(base + '/health', {}, 4000);
+      apiBase = base;
+      return apiBase;
+    } catch (_) {
+      // Try next candidate.
+    }
+  }
+
+  apiBase = null;
+  return null;
+}
+
+function _setSelectOptions(selectEl, options, preferredKey = '') {
+  if (!selectEl) return;
+  const prev = selectEl.value;
+  selectEl.innerHTML = '';
+  (options || []).forEach(item => {
+    const opt = document.createElement('option');
+    opt.value = String(item.key || '').trim();
+    opt.textContent = String(item.label || item.key || '').trim();
+    selectEl.appendChild(opt);
+  });
+
+  if (!selectEl.options.length) return;
+  if (preferredKey && Array.from(selectEl.options).some(o => o.value === preferredKey)) {
+    selectEl.value = preferredKey;
+    return;
+  }
+  if (prev && Array.from(selectEl.options).some(o => o.value === prev)) {
+    selectEl.value = prev;
+    return;
+  }
+  selectEl.selectedIndex = 0;
+}
+
+function setMenuBuilderStatus(msg, type) {
+  const el = document.getElementById('menuBuilderStatus');
+  if (!el) return;
+  const colors = {
+    loading: '#f59e0b',
+    ok:      '#22c55e',
+    error:   '#ef4444',
+    info:    'var(--text3)',
+    warn:    '#f97316',
+  };
+  el.style.color = colors[type] || 'var(--text3)';
+  el.textContent = msg || '';
+  if (msg) console.log('[GuidedMenu][' + (type || 'info') + '] ' + msg);
+}
+
+function _setGuidedDropdownEnabled(elOrId, enabled) {
+  const el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+  if (!el) return;
+  el.disabled = !enabled;
+  el.style.opacity = enabled ? '1' : '0.45';
+  el.style.cursor = enabled ? 'pointer' : 'not-allowed';
+}
+
+function _setProceedEnabled(enabled) {
+  const btn = document.getElementById('proceedBtn');
+  if (!btn) return;
+  btn.disabled = !enabled;
+  btn.style.opacity = enabled ? '1' : '0.45';
+  btn.style.cursor = enabled ? 'pointer' : 'not-allowed';
+}
+
+function _setRunScanEnabled(enabled) {
+  const btn = document.getElementById('runBtn');
+  if (!btn) return;
+  btn.disabled = !enabled;
+  btn.style.opacity = enabled ? '1' : '0.45';
+}
+
+function _hasValidBuiltScannerOption() {
+  const option = (getBuiltScanOption() || '').trim();
+  if (!option || !option.toUpperCase().startsWith('X:')) return false;
+  const parts = option.split(':');
+  return parts.length >= 3 && !!parts[1] && !!parts[2];
+}
+
+function _refreshGuidedActionButtons() {
+  const scanBusy = !!GUIDED_MENU_STATE.scanInProgress;
+  const canConfirm = _hasValidBuiltScannerOption() && !scanBusy;
+  const canRun = !!String(GUIDED_MENU_STATE.confirmedOption || '').trim() && !scanBusy;
+  _setProceedEnabled(canConfirm);
+  _setRunScanEnabled(canRun);
+}
+
+function _clearGuidedExtraLevels(fromLevel = 3) {
+  const wrap = document.getElementById('guidedExtraLevels');
+  if (!wrap) return;
+  const nodes = Array.from(wrap.querySelectorAll('[data-level]'));
+  nodes.forEach(node => {
+    const level = Number(node.getAttribute('data-level') || 0);
+    if (level >= fromLevel) {
+      node.remove();
+    }
+  });
+  // Disable fixed dropdowns if their level is being cleared
+  if (fromLevel <= 2) {
+    const scnSel = document.getElementById('scnSel');
+    if (scnSel) {
+      _setGuidedDropdownEnabled(scnSel, false);
+      scnSel.innerHTML = '<option value="">— select universe first —</option>';
+    }
+  }
+  if (fromLevel <= 1) {
+    const idxSel = document.getElementById('idxSel');
+    if (idxSel) {
+      _setGuidedDropdownEnabled(idxSel, false);
+      idxSel.innerHTML = '<option value="">— select menu first —</option>';
+    }
+  }
+  // Whenever we clear levels, reset proceed state
+  _setProceedEnabled(false);
+  GUIDED_MENU_STATE.leafReached = false;
+}
+
+function _guidanceLabelForLevel(level) {
+  if (level === 3) return 'Filter';
+  if (level === 4) return 'Condition';
+  return 'Level ' + (level + 1);
+}
+
+function _getGuidedTokens(maxLevel = 99) {
+  const parts = [];
+  const menu = (document.getElementById('menuSel') || {}).value || '';
+  const idx = (document.getElementById('idxSel') || {}).value || '';
+  const scn = (document.getElementById('scnSel') || {}).value || '';
+
+  if (menu && maxLevel >= 0) parts.push(menu);
+  if (idx && maxLevel >= 1) parts.push(idx);
+  if (scn && maxLevel >= 2) parts.push(scn);
+
+  const wrap = document.getElementById('guidedExtraLevels');
+  if (wrap) {
+    const extra = Array.from(wrap.querySelectorAll('select[data-level]'))
+      .sort((a, b) => Number(a.dataset.level) - Number(b.dataset.level));
+    extra.forEach(sel => {
+      const level = Number(sel.dataset.level || 0);
+      if (level > maxLevel) return;
+      const val = String(sel.value || '').trim();
+      if (val) parts.push(val);
+    });
+  }
+  return parts;
+}
+
+function getBuiltScanOption() {
+  const tokens = _getGuidedTokens();
+  if (!tokens.length) return '';
+  const menu = String(tokens[0] || '').toUpperCase();
+  if (menu !== 'X') return tokens.join(':');
+  if (tokens.length < 3) return '';
+  return tokens.join(':');
+}
+
+function _updateBuiltOptionPreview() {
+  const el = document.getElementById('builtOptionPreview');
+  if (!el) return;
+  const option = getBuiltScanOption();
+  el.textContent = option || 'Select menu levels to build command';
+  _refreshGuidedActionButtons();
+}
+
+async function _fetchMenuOptions(path) {
+  if (!apiBase) {
+    await resolveApiBase();
+  }
+  if (!apiBase) {
+    throw new Error('backend not reachable on localhost (5000/5050)');
+  }
+  const p = String(path || '').trim();
+  const q = p ? ('?path=' + encodeURIComponent(p)) : '';
+  return apiRequest(apiBase + '/menu-options' + q, {}, 30000);
+}
+
+async function _loadNextGuidedLevel(changedLevel, opts = {}) {
+  const { useDefaults = false } = opts;
+  const nextLevel = Number(changedLevel) + 1;
+
+  // Clear levels below nextLevel (without disabling levels at nextLevel itself)
+  if (nextLevel <= 3) {
+    _clearGuidedExtraLevels(nextLevel);
+  } else {
+    // Just clear dynamic extra levels
+    const wrap = document.getElementById('guidedExtraLevels');
+    if (wrap) {
+      Array.from(wrap.querySelectorAll('[data-level]')).forEach(node => {
+        if (Number(node.getAttribute('data-level') || 0) >= nextLevel) node.remove();
+      });
+    }
+  }
+
+  const pathTokens = _getGuidedTokens(changedLevel);
+  if (!pathTokens.length) {
+    _updateBuiltOptionPreview();
+    setMenuBuilderStatus('Select a menu option to begin.', 'info');
+    return;
+  }
+
+  const pathStr = pathTokens.join(':');
+  setMenuBuilderStatus('⏳ Loading options for ' + pathStr + ' …', 'loading');
+
+  let payload;
+  try {
+    payload = await _fetchMenuOptions(pathStr);
+  } catch (err) {
+    const errMsg = String(err && err.message ? err.message : err);
+    setMenuBuilderStatus('✘ Failed to load options: ' + errMsg, 'error');
+    console.error('[GuidedMenu] _fetchMenuOptions error for path ' + pathStr + ':', err);
+    _updateBuiltOptionPreview();
+    return;
+  }
+
+  const options = Array.isArray(payload.options) ? payload.options : [];
+
+  if (!options.length) {
+    // No children → this is a leaf node
+    const tokens = _getGuidedTokens();
+    if (tokens.length >= 3 && String(tokens[0]).toUpperCase() === 'X') {
+      // Valid complete path: X:universe:scan[:...]
+      GUIDED_MENU_STATE.leafReached = true;
+      _setProceedEnabled(true);
+      setMenuBuilderStatus('✓ All levels selected — click Confirm Selection to use this scanner.', 'ok');
+    } else if (tokens.length < 3) {
+      setMenuBuilderStatus('✘ Invalid combination: no options available at this level. Try a different selection.', 'error');
+      console.warn('[GuidedMenu] No options returned for path:', pathStr, '| tokens:', tokens);
+    } else {
+      GUIDED_MENU_STATE.leafReached = true;
+      _setProceedEnabled(true);
+      setMenuBuilderStatus('✓ Selection complete — click Confirm Selection to use this scanner.', 'ok');
+    }
+    _updateBuiltOptionPreview();
+    updateExplain();
+    return;
+  }
+
+  if (nextLevel === 1) {
+    const preferred = useDefaults ? '12' : '';
+    const idxSel = document.getElementById('idxSel');
+    _setSelectOptions(idxSel, options, preferred);
+    _setGuidedDropdownEnabled(idxSel, true);
+    setMenuBuilderStatus('Step 2: Select a universe / index.', 'info');
+  } else if (nextLevel === 2) {
+    const preferred = useDefaults ? '1' : '';
+    const scnSel = document.getElementById('scnSel');
+    _setSelectOptions(scnSel, options, preferred);
+    _setGuidedDropdownEnabled(scnSel, true);
+    setMenuBuilderStatus('Step 3: Select a scan type.', 'info');
+  } else {
+    const wrap = document.getElementById('guidedExtraLevels');
+    if (!wrap) {
+      _updateBuiltOptionPreview();
+      return;
+    }
+
+    const block = document.createElement('div');
+    block.className = 'cg';
+    block.setAttribute('data-level', String(nextLevel));
+    const selId = 'guidedLevel' + nextLevel;
+    const stepLabel = 'Step ' + (nextLevel + 1) + ' — ' + _guidanceLabelForLevel(nextLevel);
+    block.innerHTML = '<div class="clbl">' + stepLabel + '</div>' +
+      '<select id="' + selId + '" data-level="' + nextLevel + '" style="opacity:1;cursor:pointer"></select>';
+    wrap.appendChild(block);
+    const sel = block.querySelector('select');
+    _setSelectOptions(sel, options);
+    _setGuidedDropdownEnabled(sel, true);
+    sel.addEventListener('change', () => onGuidedSelectionChange(nextLevel));
+    setMenuBuilderStatus('Step ' + (nextLevel + 1) + ': Select a ' + _guidanceLabelForLevel(nextLevel).toLowerCase() + ' (optional — or Confirm now).', 'info');
+    // Since there ARE more options, at level >=3 the base path X:universe:scan is already valid
+    // Enable Proceed so user can confirm with or without sub-filters
+    if (_getGuidedTokens().length >= 3) {
+      _setProceedEnabled(true);
+    }
+  }
+
+  _updateBuiltOptionPreview();
+  updateExplain();
+}
+
+async function onGuidedSelectionChange(level) {
+  // When a dropdown at 'level' changes, invalidate all selections below it
+  _setProceedEnabled(false);
+  GUIDED_MENU_STATE.leafReached = false;
+  // Visually reset the confirmed scanner if user changes selection
+  const lockedEl = document.getElementById('lockedOptionDisplay');
+  if (lockedEl && GUIDED_MENU_STATE.confirmedOption) {
+    lockedEl.style.color = 'var(--text3)';
+    lockedEl.textContent = 'Not confirmed yet (selection changed)';
+    GUIDED_MENU_STATE.confirmedOption = '';
+    _setRunScanEnabled(false);
+  }
+  // Clear all dropdowns/levels BELOW the one that just changed:
+  // - level 0 (menuSel) changed  → clear level 1 (idxSel), level 2 (scnSel), and all extras
+  // - level 1 (idxSel) changed   → clear level 2 (scnSel) and all extras
+  // - level 2 (scnSel) changed   → clear dynamic levels 3+
+  // - level 3+ changed            → clear dynamic levels above it
+  if (level <= 2) {
+    _clearGuidedExtraLevels(level + 1);
+  } else {
+    // Clear only dynamic levels ABOVE the changed one
+    const wrap = document.getElementById('guidedExtraLevels');
+    if (wrap) {
+      Array.from(wrap.querySelectorAll('[data-level]')).forEach(node => {
+        if (Number(node.getAttribute('data-level') || 0) > level) node.remove();
+      });
+    }
+    _setProceedEnabled(false);
+    GUIDED_MENU_STATE.leafReached = false;
+  }
+  setMenuBuilderStatus('', 'info');
+  try {
+    await _loadNextGuidedLevel(level, { useDefaults: false });
+
+    // Auto-probe downstream defaults so Confirm can be used repeatedly
+    // without forcing the user to re-change every child dropdown manually.
+    // Example: if idx changes and scn is auto-selected, evaluate that scn path
+    // immediately and enable Confirm when the combination is valid.
+    if (level === 0) {
+      await _loadNextGuidedLevel(1, { useDefaults: false });
+      await _loadNextGuidedLevel(2, { useDefaults: false });
+    } else if (level === 1) {
+      await _loadNextGuidedLevel(2, { useDefaults: false });
+    }
+  } catch (err) {
+    const errMsg = String(err && err.message ? err.message : err);
+    setMenuBuilderStatus('✘ Error loading next level: ' + errMsg, 'error');
+    console.error('[GuidedMenu] onGuidedSelectionChange error at level', level, ':', err);
+  }
+  _updateBuiltOptionPreview();
+  updateExplain();
+}
+
+function confirmGuidedOption() {
+  const option = getBuiltScanOption();
+  if (!option) {
+    setMenuBuilderStatus('✘ No valid scanner path built yet. Complete all steps first.', 'error');
+    return;
+  }
+  if (!option.toUpperCase().startsWith('X:')) {
+    setMenuBuilderStatus('✘ Only scanner (X:) paths are supported. Select X in Step 1.', 'error');
+    return;
+  }
+  const parts = option.split(':');
+  if (parts.length < 3 || !parts[1] || !parts[2]) {
+    setMenuBuilderStatus('✘ Incomplete path "' + option + '". Need at least X:universe:scan.', 'error');
+    return;
+  }
+  GUIDED_MENU_STATE.confirmedOption = option;
+  const lockedEl = document.getElementById('lockedOptionDisplay');
+  if (lockedEl) {
+    lockedEl.style.color = '#22c55e';
+    lockedEl.textContent = option;
+  }
+  _setRunScanEnabled(true);
+  setMenuBuilderStatus('✔ Scanner locked as "' + option + '". Click Run Scan to execute.', 'ok');
+  console.log('[GuidedMenu] Confirmed scanner option:', option);
+  _refreshGuidedActionButtons();
+}
+
+async function initGuidedMenus() {
+  if (!isLocal) return;
+  setMenuBuilderStatus('⏳ Loading menu structure…', 'loading');
+  try {
+    const root = await _fetchMenuOptions('');
+    const topOptions = Array.isArray(root.options) ? root.options : [];
+    const menuSel = document.getElementById('menuSel');
+    if (!menuSel) {
+      setMenuBuilderStatus('✘ Menu element not found.', 'error');
+      return;
+    }
+    if (!topOptions.length) {
+      setMenuBuilderStatus('✘ Backend returned no top-level menu options. Check server connection.', 'error');
+      return;
+    }
+
+    _setSelectOptions(menuSel, topOptions, 'X');
+    // Start with idxSel and scnSel disabled
+    _setGuidedDropdownEnabled('idxSel', false);
+    _setGuidedDropdownEnabled('scnSel', false);
+    _clearGuidedExtraLevels(3);
+
+    // Load universe options (enables idxSel)
+    await _loadNextGuidedLevel(0, { useDefaults: true });
+    // Load scan type options (enables scnSel)
+    await _loadNextGuidedLevel(1, { useDefaults: true });
+    // Probe level 3+ sub-filters for the default scan
+    await _loadNextGuidedLevel(2, { useDefaults: false });
+
+    GUIDED_MENU_STATE.initialized = true;
+    _updateBuiltOptionPreview();
+    updateExplain();
+  } catch (err) {
+    const errMsg = String(err && err.message ? err.message : err);
+    setMenuBuilderStatus('✘ Failed to initialise menus: ' + errMsg, 'error');
+    console.error('[GuidedMenu] initGuidedMenus error:', err);
+  }
+}
+
+async function loadScannersFromBackend() {
+  if (!isLocal) return;
+  if (!apiBase) {
+    await resolveApiBase();
+  }
+  if (!apiBase) return;
+
+  const sel = document.getElementById('scnSel');
+  if (!sel) return;
+
+  try {
+    const payload = await apiRequest(apiBase + '/scanners', {}, 30000);
+    const scanners = Array.isArray(payload.scanners) ? payload.scanners : [];
+    const orderedScanners = sortScanners(scanners);
+    if (!scanners.length) return;
+
+    Object.keys(SCANNER_TOOLTIPS_BY_OPTION).forEach(k => { delete SCANNER_TOOLTIPS_BY_OPTION[k]; });
+
+    const previousValue = sel.value;
+    const previousText = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '';
+    sel.innerHTML = '';
+
+    const seen = new Set();
+    orderedScanners.forEach(item => {
+      const value = String(item.option || item.id || '').trim();
+      if (!value || seen.has(value)) return;
+      seen.add(value);
+
+      const desc = String(item.description || '').trim();
+      if (desc) {
+        SCANNER_TOOLTIPS_BY_OPTION[value] = desc;
+      }
+
+      const opt = document.createElement('option');
+      opt.value = value;
+      opt.textContent = item.label || value;
+      if (desc) {
+        opt.dataset.desc = desc;
+      }
+      opt.title = getScannerTooltipText(value, opt.textContent);
+      sel.appendChild(opt);
+    });
+
+    const keepPrevious = previousValue && seen.has(previousValue) && previousValue.toUpperCase() !== 'X:12:7';
+    if (keepPrevious) {
+      sel.value = previousValue;
+    } else {
+      const fallback = String(payload.default_option || '').trim();
+      if (fallback && seen.has(fallback)) {
+        sel.value = fallback;
+      }
+    }
+
+    if (sel.options.length > 0 && !sel.value) {
+      sel.selectedIndex = 0;
+    }
+
+    const currentText = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '';
+    if (currentText && currentText !== previousText) {
+      setConnState('ok', 'Connection: loaded ' + orderedScanners.length + ' scanner options');
+    }
+    refreshScannerOptionTooltips();
+    updateExplain();
+  } catch (err) {
+    console.warn('Could not load /scanners catalog:', err);
+  }
+}
+
+async function apiRequest(url, options = {}, timeoutMs = 120000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch (_) {
+      throw new Error('Invalid JSON response from backend');
+    }
+
+    if (!response.ok || !payload || payload.ok === false) {
+      const backendError = payload && (payload.error || payload.message);
+      throw new Error(backendError || ('HTTP ' + response.status));
+    }
+    return payload;
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function setView(view, btn) {
+  activeView = view;
+  const dash = document.getElementById('dashboardView');
+  const cfg = document.getElementById('configView');
+  if (dash && cfg) {
+    dash.style.display = view === 'dashboard' ? '' : 'none';
+    cfg.style.display = view === 'config' ? '' : 'none';
+  }
+  document.querySelectorAll('#tabDash,#tabConfig').forEach(b => b.classList.remove('on'));
+  if (btn) {
+    btn.classList.add('on');
+  }
+}
+
+function setConnState(state, msg) {
+  const el = document.getElementById('connState');
+  if (!el) return;
+  const colors = {
+    ok: 'var(--bull)',
+    warn: 'var(--warn)',
+    error: 'var(--bear)',
+    idle: 'var(--text3)',
+  };
+  el.style.color = colors[state] || colors.idle;
+  el.textContent = msg;
+}
+
+function setCfgStatus(state, msg) {
+  const el = document.getElementById('cfgStatus');
+  if (!el) return;
+  const colors = {
+    ok: 'var(--bull)',
+    warn: 'var(--warn)',
+    error: 'var(--bear)',
+    idle: 'var(--text2)',
+  };
+  el.style.color = colors[state] || colors.idle;
+  el.textContent = 'Status: ' + msg;
+}
+
+function updateIstClock() {
+  const el = document.getElementById('istNow');
+  if (!el) return;
+  const now = new Date();
+  const timeText = now.toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    hour12: false,
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+  el.textContent = 'IST: ' + timeText;
+}
+
+function _configHeaders() {
+  const token = (document.getElementById('cfgToken') || {}).value || '';
+  const headers = { 'Content-Type': 'application/json' };
+  if (token.trim().length > 0) {
+    headers['X-Config-Token'] = token.trim();
+  }
+  return headers;
+}
+
+async function loadConfigFromBackend() {
+  setCfgStatus('warn', 'loading config from backend...');
+  try {
+    if (!apiBase) {
+      await resolveApiBase();
+    }
+    if (!apiBase) {
+      throw new Error('backend not reachable on localhost (5000/5050)');
+    }
+    const token = (document.getElementById('cfgToken') || {}).value || '';
+    const q = token.trim().length ? ('?token=' + encodeURIComponent(token.trim())) : '';
+    const payload = await apiRequest(apiBase + '/config' + q, { headers: _configHeaders() }, 30000);
+    document.getElementById('cfgRaw').value = payload.raw || '';
+    setCfgStatus('ok', 'config loaded successfully');
+    setConnState('ok', 'Connection: backend connected at ' + apiBase);
+  } catch (err) {
+    setCfgStatus('error', 'load failed: ' + err.message);
+    setConnState('error', 'Connection: localhost config endpoint unavailable');
+  }
+}
+
+async function saveConfigToBackend() {
+  setCfgStatus('warn', 'saving config to backend...');
+  try {
+    if (!apiBase) {
+      await resolveApiBase();
+    }
+    if (!apiBase) {
+      throw new Error('backend not reachable on localhost (5000/5050)');
+    }
+    const raw = (document.getElementById('cfgRaw') || {}).value || '';
+    if (!raw.trim()) {
+      throw new Error('config textarea is empty');
+    }
+    const token = (document.getElementById('cfgToken') || {}).value || '';
+    const q = token.trim().length ? ('?token=' + encodeURIComponent(token.trim())) : '';
+    await apiRequest(apiBase + '/config' + q, {
+      method: 'POST',
+      headers: _configHeaders(),
+      body: JSON.stringify({ raw })
+    }, 45000);
+    setCfgStatus('ok', 'config saved to backend pkscreener.ini');
+  } catch (err) {
+    setCfgStatus('error', 'save failed: ' + err.message);
+  }
+}
+
+function applyMarketData(market) {
+  if (!market || typeof market !== 'object') return;
+  if (market.nifty === undefined || market.sensex === undefined) return;
+
+  const nifty = Number(market.nifty || 0);
+  const sensex = Number(market.sensex || 0);
+  const niftyChg = Number(market.niftyChg || 0);
+  const sensexChg = Number(market.sensexChg || 0);
+
+  document.getElementById('niftyVal').textContent = nifty.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  document.getElementById('sensexVal').textContent = sensex.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const ne = document.getElementById('niftyChg');
+  const se = document.getElementById('sensexChg');
+  ne.textContent = (niftyChg >= 0 ? '+' : '') + niftyChg.toFixed(2) + '%';
+  se.textContent = (sensexChg >= 0 ? '+' : '') + sensexChg.toFixed(2) + '%';
+  ne.className = 'mpill-chg ' + (niftyChg >= 0 ? 'up' : 'dn');
+  se.className = 'mpill-chg ' + (sensexChg >= 0 ? 'up' : 'dn');
+}
+
+function pingBackendHealth() {
+  if (!isLocal) {
+    setConnState('warn', 'Connection: GitHub mode (read-only hosted data)');
+    return;
+  }
+  resolveApiBase()
+    .then(base => {
+      if (!base) {
+        setConnState('error', 'Connection: backend not reachable on localhost (5000/5050)');
+        return;
+      }
+      setConnState('ok', 'Connection: backend connected at ' + base);
+      return apiRequest(base + '/health', {}, 8000)
+        .then(h => applyMarketData(h.market))
+        .catch(() => {});
+    })
+    .catch(_ => setConnState('error', 'Connection: backend probe failed'));
+}
+
+// ── MODE DETECTION ────────────────────────────────────────────────────────────
+function detectMode() {
+  const banner = document.getElementById('modeBanner');
+  const txt    = document.getElementById('modeText');
+  const hint   = document.getElementById('modeHint');
+  const ghBtn  = document.getElementById('ghBtn');
+  const runBtn = document.getElementById('runBtn');
+  const footer = document.getElementById('footerMode');
+
+  if (isLocal) {
+    banner.className = 'local';
+    txt.textContent  = '⚡ Local mode — unlimited scans · PKScreener running on this machine';
+    hint.textContent = 'localhost';
+    ghBtn.style.display  = 'none';
+    runBtn.style.display = 'flex';
+    footer.textContent   = 'Running locally · Unlimited scans';
+  } else {
+    banner.className = 'remote';
+    txt.textContent  = '☁ GitHub Pages mode — scans run via GitHub Actions (2 automated daily)';
+    hint.textContent = 'github.io';
+    ghBtn.style.display  = 'block';
+    footer.textContent   = 'GitHub Pages · Auto-scans: 8:30 AM & 3:45 PM IST (Mon–Fri)';
+    // Auto-load latest scan data from committed data.json
+    loadLiveData();
+  }
+}
+
+function loadLiveData() {
+  const btn = document.getElementById('runBtn');
+  btn.textContent = '⏳ Loading...';
+  btn.disabled = true;
+  fetch('./data.json?_=' + Date.now())
+    .then(r => r.json())
+    .then(d => {
+      if (d.stocks && d.stocks.length > 0) {
+        data = d.stocks;
+        render(data);
+        setMeta(d);
+        document.getElementById('scanTag') && (document.getElementById('scanTag').textContent =
+          (d.scan_summary||[]).map(s => s.label + ' (' + s.count + ')').join(' · '));
+        document.getElementById('resultsMeta') && (document.getElementById('resultsMeta').textContent =
+          d.total + ' stocks · ' + d.date);
+      }
+    })
+    .catch(() => { showError('Unable to load live data.json'); })
+    .finally(() => { btn.textContent = '▶ Run Scan'; btn.disabled = false; });
+}
+
+// ── SKILL LEVEL ───────────────────────────────────────────────────────────────
+const TIPS = {
+  beginner: {
+    '7':  '<strong>Breakout scan</strong> finds stocks that were stuck in a price range and are now moving up strongly — like a coiled spring releasing. High volume makes it more reliable.',
+    '29': '<strong>5 EMA scan</strong> finds stocks where price is above its 5-day average, meaning it has been going up recently. Good for short-term trades.',
+    '42': '<strong>Confluence scan</strong> looks for stocks where multiple moving averages all agree the stock is trending up. More signals agreeing = stronger conviction.',
+    '6':  '<strong>Volume Surge</strong> finds stocks with unusually high trading activity. High volume + rising price = more people are buying, which is a positive sign.',
+    def:  'Select a scan type above to see a plain-English explanation of what it does.',
+  },
+  intermediate: {
+    '7':  '<strong>Breakout (Consolidating)</strong> scans for tight price-range consolidation with expanding volume suggesting a breakout above resistance. Aim for 2×+ volume confirmation.',
+    '29': '<strong>5 EMA Intraday</strong> identifies stocks where price crosses above the 5-period EMA on intraday charts, signalling short-term bullish momentum.',
+    '42': '<strong>Confluence (50 & 200 MA)</strong> finds stocks near both the 50-day and 200-day moving averages — a high-probability setup where multiple technical levels converge.',
+    '6':  '<strong>Volume Surge</strong> screens for volume 2× above the 20-day average. High volume validates price moves and signals institutional participation.',
+    def:  'Select a scan type to see which indicators and filters are applied.',
+  },
+  advanced: {
+    '7':  '<strong>Breakout (VCP-style)</strong> — volatility contraction pattern: decreasing volume/range consolidation breaking above pivot with expanding volume. Entry at breakout candle close, stop below last pivot low.',
+    '29': '<strong>5 EMA Cross</strong> — dual-timeframe EMA alignment. Price above 5 EMA on 15-min chart with 50/200 EMA trend alignment. High win-rate intraday momentum.',
+    '42': '<strong>MA Confluence</strong> — golden zone between 50 and 200 EMA. Stock retracing into confluence zone with bullish price action. Optimal R:R with defined stop below 200 EMA.',
+    '6':  '<strong>Volume Surge</strong> — OBV-confirmed spike above 2σ from 20-day mean with price above VWAP. Indicates institutional accumulation.',
+    def:  'Select a scan to see technical parameters and strategy context.',
+  }
+};
+
+const LTIPS = {
+  beginner:     {ltp:'The price you would pay to buy this stock right now.',vol:"How busy the stock is today. 2× means twice as many people are trading it — usually a good sign.",rsi:'0–100 number. Above 60 = going up strongly. Below 40 = weak.',ret:'If you had bought when this pattern appeared before, this is how much you could have made in 1 or 2 days.'},
+  intermediate: {ltp:'Last traded price in ₹. Compare with 52W range to understand where it sits in its cycle.',vol:'Volume as multiple of 20-day avg. 2×+ confirms breakouts. Low volume moves are unreliable.',rsi:'RSI(14). 40–60 = neutral. 60–70 = bullish. 70+ = overbought.',ret:'Backtested 1-day and 2-day returns after this scan pattern triggered historically.'},
+  advanced:     {ltp:'LTP vs VWAP and key S/R levels. Position within 52W range indicates stage (Stage 2 preferred).',vol:'Relative volume vs 20-SMA. 2σ+ spike with price above VWAP = institutional signal.',rsi:'RSI(14) with divergence awareness. 55–70 rising slope preferred for momentum entries.',ret:'Forward returns from backtested signal — use for expectancy and position sizing.'}
+};
+
+function setSkill(lv, btn) {
+  skill = lv;
+  const scope = document.getElementById('skillPills');
+  if (scope) {
+    scope.querySelectorAll('.sb').forEach(b => b.classList.remove('on'));
+  }
+  if (btn) {
+    btn.classList.add('on');
+  }
+  updateExplain(); updateLegend();
+}
+
+function updateExplain() {
+  const builtOption = getBuiltScanOption();
+  const selected = document.getElementById('scnSel');
+  const v = getScanKeyFromValue(builtOption || (selected ? selected.value : ''));
+  const m = TIPS[skill];
+  const box = document.getElementById('eb');
+  if (box) {
+    box.innerHTML = m[v] || m.def;
+    box.classList.add('on');
+  }
+  _updateBuiltOptionPreview();
+  refreshScannerOptionTooltips();
+}
+
+function updateLegend() {
+  const t = LTIPS[skill];
+  document.getElementById('lLTP').textContent = t.ltp;
+  document.getElementById('lVOL').textContent = t.vol;
+  document.getElementById('lRSI').textContent = t.rsi;
+  document.getElementById('lRET').textContent = t.ret;
+}
+
+// ── FILTER ────────────────────────────────────────────────────────────────────
+function filterTable() {
+  const q = (document.getElementById('srchBox').value||'').toLowerCase();
+  document.querySelectorAll('#tbody tr').forEach(r=>{
+    const ms = q === '' || (r.dataset.stock||'').toLowerCase().includes(q);
+    r.style.display = ms ? '' : 'none';
+  });
+}
+
+// ── SORT ──────────────────────────────────────────────────────────────────────
+function sortBy(col) {
+  if(sCol===col) sDir*=-1; else{sCol=col;sDir=1;}
+  document.querySelectorAll('th').forEach((th,i)=>th.classList.toggle('srt',i===col));
+  const keys=['stock','ltp','chg','vol','','rsi','','','d1','d2'];
+  const k=keys[col]; if(!k) return;
+  data.sort((a,b)=>(a[k]>b[k]?1:-1)*sDir);
+  render(data);
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render(rows) {
+  const tbody = document.getElementById('tbody');
+  const empty = document.getElementById('emptyState');
+  if(!rows||!rows.length){tbody.innerHTML='';empty.classList.add('on');return;}
+  empty.classList.remove('on');
+
+  tbody.innerHTML = rows.map(d=>{
+    const rp  = Math.round(((d.ltp-d.w52l)/(d.w52h-d.w52l))*100);
+    const vpct= Math.min(100,Math.round((d.vol/5)*100));
+    const rc  = d.rsi>=60?'var(--bull)':d.rsi<=40?'var(--bear)':'var(--warn)';
+    const cc  = d.chg>=0?'bt':'brt';
+    const d1c = d.d1>=0?'bt':'brt';
+    const d2c = d.d2>=0?'bt':'brt';
+    const pc  = (d.pattern||'').toLowerCase().replace(/\s+/g,'');
+    const sc  = (d.signal||'').toLowerCase();
+
+    const rtip = skill==='beginner'
+      ? `RSI is ${d.rsi}. ${d.rsi>=60?'Good momentum — trending up.':d.rsi<=40?'Weak — losing strength.':'Neutral — watch direction.'}`
+      : `RSI(14): ${d.rsi}. ${d.rsi>=70?'Overbought — potential reversal.':d.rsi>=60?'Bullish zone.':d.rsi<=40?'Oversold/weak.':'Neutral range.'}`;
+
+    const vtip = skill==='beginner'
+      ? `Today's activity is ${d.vol}× normal. ${d.vol>=2?"That's high — institutional buying likely!":'Normal activity.'}`
+      : `Rel. volume: ${d.vol}× 20-day avg. ${d.vol>=2?'Institutional-level activity.':'Below confirmation threshold.'}`;
+
+    return `<tr data-stock="${d.stock}" data-signal="${d.signal}" data-scan="${d.scan}">
+      <td><span class="sn">${d.stock}</span><span class="ss">${d.sector}</span></td>
+      <td class="mo">₹${d.ltp.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+      <td class="${cc} mo">${d.chg>=0?'+':''}${d.chg.toFixed(1)}%</td>
+      <td><div class="ht vw" data-tip="${vtip}"><div class="vb"><div class="vf" style="width:${vpct}%"></div></div><span class="${d.vol>=2?'bt':'wt'} mo">${d.vol.toFixed(1)}×</span></div></td>
+      <td><div class="rw"><div class="rp">${rp}% of range</div><div class="rb"><div class="rf"></div><div class="rd" style="left:${rp}%"></div></div><div class="re"><span>₹${d.w52l.toLocaleString('en-IN')}</span><span>₹${d.w52h.toLocaleString('en-IN')}</span></div></div></td>
+      <td><div class="ht" data-tip="${rtip}" style="font-family:var(--font-mono);font-weight:500;color:${rc}">${d.rsi.toFixed(1)}</div></td>
+      <td><span class="bdg ${pc}">${d.pattern}</span></td>
+      <td><span class="sig ${sc}">${d.signal}</span></td>
+      <td class="${d1c} mo">${d.d1>=0?'+':''}${d.d1.toFixed(1)}%</td>
+      <td class="${d2c} mo">${d.d2>=0?'+':''}${d.d2.toFixed(1)}%</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('mBuy').textContent   = rows.filter(r=>r.signal==='BUY').length;
+  document.getElementById('mWatch').textContent = rows.filter(r=>r.signal==='WATCH').length;
+  document.getElementById('mAvoid').textContent = rows.filter(r=>r.signal==='AVOID').length;
+  document.getElementById('mTotal').textContent = rows.length;
+  filterTable();
+}
+
+// ── SCAN ──────────────────────────────────────────────────────────────────────
+function setScanStatus(state, msg) {
+  const el = document.getElementById('scanStatus');
+  if (!el) return;
+  const colors = { running: '#f59e0b', completed: '#22c55e', failed: '#ef4444', idle: 'var(--text3)' };
+  el.style.color = colors[state] || 'var(--text3)';
+  el.textContent = msg;
+}
+
+function setScanCommand(msg) {
+  const el = document.getElementById('scanCommand');
+  if (!el) return;
+  el.textContent = msg || '';
+}
+
+function stopRuntimeMirror() {
+  if (runtimePollTimer) {
+    clearInterval(runtimePollTimer);
+    runtimePollTimer = null;
+  }
+}
+
+function startRuntimeMirror() {
+  if (!isLocal) return;
+  stopRuntimeMirror();
+
+  const poll = () => {
+    resolveApiBase()
+      .then(base => {
+        if (!base) return null;
+        return apiRequest(base + '/runtime', {}, 8000);
+      })
+      .then(r => {
+        if (!r) return;
+        applyMarketData(r.market);
+        if (r.scan_running) {
+          const elapsed = Number(r.scan_elapsed_sec || 0);
+          setScanStatus('running', '⏳ Scan running... ' + elapsed + 's elapsed');
+          if (r.last_scan_command) {
+            setScanCommand('Running: ' + r.last_scan_command);
+          }
+
+          apiRequest(apiBase + '/scan-progress', {}, 8000)
+            .then(p => {
+              if (!p) return;
+              applyMarketData(p.market);
+              const liveStocks = Array.isArray(p.stocks) ? p.stocks : [];
+              if (liveStocks.length > 0) {
+                data = liveStocks;
+                render(data);
+                const rmeta = document.getElementById('rmeta');
+                if (rmeta) {
+                  rmeta.textContent = liveStocks.length + ' stocks queued so far · live scan';
+                }
+              } else {
+                setScanStatus('running', '⏳ Scan running... ' + elapsed + 's elapsed · building results queue');
+              }
+            })
+            .catch(() => {});
+        } else {
+          // Scan finished — always fetch and apply final results.
+          // This avoids stale rows when a new scan returns 0 stocks.
+          apiRequest(apiBase + '/scan-progress', {}, 8000)
+            .then(p => {
+              if (!p) return;
+              applyMarketData(p.market);
+              const finalStocks = Array.isArray(p.stocks) ? p.stocks : [];
+              data = finalStocks;
+              render(data);
+
+              const t = new Date().toLocaleTimeString('en-IN', {hour: '2-digit', minute: '2-digit'});
+              setScanStatus('completed', `✔ Completed at ${t} · ${data.length} stocks found`);
+
+              const rmeta = document.getElementById('rmeta');
+              if (rmeta) {
+                rmeta.textContent = finalStocks.length + ' stocks · ' + new Date().toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'});
+              }
+            })
+            .catch(() => {})
+            .finally(() => {
+              stopRuntimeMirror();
+            });
+        }
+      })
+      .catch(() => {});
+  };
+
+  poll();
+  runtimePollTimer = setInterval(poll, 2000);
+}
+
+function startTerminalMirror() {
+  if (!isLocal) return;
+  if (terminalPollTimer) {
+    clearInterval(terminalPollTimer);
+  }
+
+  const poll = () => {
+    resolveApiBase()
+      .then(base => {
+        if (!base) return null;
+        return apiRequest(base + '/terminal-output', {}, 8000);
+      })
+      .then(d => {
+        if (!d) return;
+        const box = document.getElementById('backendTerminalBox');
+        if (!box) return;
+        const text = d.joined || '';
+        const wasNearBottom = (box.scrollTop + box.clientHeight + 40) >= box.scrollHeight;
+        box.value = text;
+        if (wasNearBottom) {
+          box.scrollTop = box.scrollHeight;
+        }
+      })
+      .catch(() => {});
+  };
+
+  poll();
+  terminalPollTimer = setInterval(poll, 2000);
+}
+
+function runScan() {
+  if(isLocal) {
+    // Local mode: try to fetch from local Python server
+    const btn = document.getElementById('runBtn');
+    GUIDED_MENU_STATE.scanInProgress = true;
+    _refreshGuidedActionButtons();
+    btn.textContent='⏳ Scanning...'; btn.disabled=true;
+    setScanStatus('running', '⏳ Scan running... (timeout: 900s)');
+    startRuntimeMirror();
+    const idx = document.getElementById('idxSel').value;
+    // Prefer the user-confirmed option; fall back to built option for backward compatibility
+    const selectedScan = (GUIDED_MENU_STATE.confirmedOption || getBuiltScanOption() || (document.getElementById('scnSel').value || '').trim()).trim();
+    if (!selectedScan || !selectedScan.toUpperCase().startsWith('X:')) {
+      setScanStatus('failed', '✘ Confirm a scanner path first (Step 1 → 2 → 3 → Confirm Selection)');
+      setScanCommand('No confirmed scanner option — use the dropdown steps above');
+      stopRuntimeMirror();
+      GUIDED_MENU_STATE.scanInProgress = false;
+      btn.innerHTML='▶ Run Scan';
+      btn.disabled=false;
+      _refreshGuidedActionButtons();
+      return;
+    }
+    const scanParts = selectedScan.split(':');
+    if (scanParts.length < 3 || !scanParts[1] || !scanParts[2]) {
+      setScanStatus('failed', '✘ Incomplete path "' + selectedScan + '". Need at least X:universe:scan.');
+      setScanCommand('Incomplete scanner option — complete all dropdown steps');
+      stopRuntimeMirror();
+      GUIDED_MENU_STATE.scanInProgress = false;
+      btn.innerHTML='▶ Run Scan';
+      btn.disabled=false;
+      _refreshGuidedActionButtons();
+      return;
+    }
+    const sentCommand = selectedScan.toUpperCase().startsWith('X:')
+      ? ('/scan?option=' + selectedScan)
+      : ('/scan?index=' + idx + '&scan=' + selectedScan);
+    setScanCommand('Sending: ' + sentCommand);
+    resolveApiBase()
+      .then(base => {
+        if (!base) {
+          throw new Error('backend not reachable on localhost (5000/5050)');
+        }
+        if (selectedScan.toUpperCase().startsWith('X:')) {
+          return apiRequest(`${base}/scan?option=${encodeURIComponent(selectedScan)}`, {}, SCAN_REQUEST_TIMEOUT_MS);
+        }
+        return apiRequest(`${base}/scan?index=${idx}&scan=${encodeURIComponent(selectedScan)}`, {}, SCAN_REQUEST_TIMEOUT_MS);
+      })
+      .then(d=>{ 
+        data=d.stocks||[]; 
+        render(data); 
+        setMeta(d);
+        showErrors(d.errors, d.debug_output, d.all_logs);
+        const executed = d.all_logs && d.all_logs[0] && d.all_logs[0].details ? d.all_logs[0].details : '';
+        if (executed) {
+          setScanCommand('Executed: ' + executed);
+        }
+        const t = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+        setScanStatus('completed', `✔ Completed at ${t} · ${data.length} stocks found`);
+        stopRuntimeMirror();
+      })
+      .catch((err)=>{ 
+        const msg = String(err && err.message ? err.message : err);
+        const lowMsg = msg.toLowerCase();
+
+        if (lowMsg.includes('already running')) {
+          setScanStatus('running', '⏳ Another scan is already running. Waiting for completion...');
+          setScanCommand('In progress: ' + sentCommand);
+          startRuntimeMirror();
+          return;
+        }
+
+        setScanStatus('failed', '✘ ' + msg);
+        setScanCommand('Failed request: ' + sentCommand);
+        stopRuntimeMirror();
+
+        if (lowMsg.includes('timed out')) {
+          showError('Scan request timed out in browser. Backend may still be running this scan. Check backend terminal and try again in a minute.');
+          startRuntimeMirror();
+          return;
+        }
+
+        if (lowMsg.includes('backend not reachable') || lowMsg.includes('failed to fetch') || lowMsg.includes('network')) {
+          showError('Local backend is not reachable. Start it with run_dashboard_one_click.bat');
+          alert('Local server not running.\nStart it with: run_dashboard_one_click.bat');
+          return;
+        }
+
+        showError('Scan failed: ' + msg);
+      })
+      .finally(()=>{
+        GUIDED_MENU_STATE.scanInProgress = false;
+        btn.innerHTML='▶ Run Scan';
+        btn.disabled=false;
+        _refreshGuidedActionButtons();
+      });
+  } else {
+    loadLiveData();
+  }
+}
+
+function setMeta(d) {
+  document.getElementById('lastUpdated').textContent='Last scan: '+new Date().toLocaleTimeString('en-IN');
+  const iSel = document.getElementById('idxSel');
+  const sSel = document.getElementById('scnSel');
+  const iText = iSel && iSel.selectedIndex >= 0 ? iSel.options[iSel.selectedIndex].text : '';
+  const sText = sSel && sSel.selectedIndex >= 0 ? sSel.options[sSel.selectedIndex].text : '';
+  const built = getBuiltScanOption();
+  document.getElementById('stag').textContent=(iText+' · '+sText + (built ? (' · ' + built) : '')).trim();
+  document.getElementById('rmeta').textContent=(d.total||data.length)+' stocks · '+new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  applyMarketData(d.market);
+}
+
+function triggerGitHub() {
+  window.open('https://github.com/VenkyHari98/screener-dashboard/actions','_blank');
+}
+
+function showError(msg) {
+  const banner = document.getElementById('errorBanner');
+  const msgEl = document.getElementById('errorMsg');
+  msgEl.textContent = msg;
+  banner.style.display = 'block';
+}
+
+function showErrors(errors, debug, allLogs) {
+  const banner = document.getElementById('errorBanner');
+  const msgEl = document.getElementById('errorMsg');
+  const debugEl = document.getElementById('debugMsg');
+  const logsEl = document.getElementById('serverLogs');
+  
+  // Show banner if there are errors OR if we got no stocks (likely a problem)
+  if(!errors || errors.length === 0) {
+    // Still show if no stocks were found
+    if(data.length === 0) {
+      msgEl.textContent = '⚠ No stocks found in results (check debug output below)';
+      banner.style.display = 'block';
+    } else {
+      banner.style.display = 'none';
+      return;
+    }
+  } else {
+    const errorMsgs = errors.map(e => (e.level === 'ERROR' ? '❌ ' : '⚠ ') + e.message).join('\n');
+    msgEl.textContent = errorMsgs;
+    banner.style.display = 'block';
+  }
+  
+  // Show PKScreener raw output
+  if(debug) {
+    debugEl.textContent = debug.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  
+  // Show recent server logs
+  if(allLogs && allLogs.length > 0) {
+    const logText = allLogs.map(l => `[${l.timestamp}] ${l.level}: ${l.message}${l.details ? ' → ' + l.details : ''}`).join('\n');
+    logsEl.textContent = logText;
+  }
+  
+  console.log('Errors/Warnings:', errors);
+  console.log('Debug output:', debug);
+  console.log('Server logs:', allLogs);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+detectMode();
+updateExplain();
+updateLegend();
+updateIstClock();
+setInterval(updateIstClock, 1000);
+pingBackendHealth();
+setInterval(pingBackendHealth, 15000);
+
+// On local mode, fetch server logs on startup
+if(isLocal) {
+  window.addEventListener('DOMContentLoaded', () => {
+    resolveApiBase()
+      .then(() => initGuidedMenus())
+      .then(() => {
+        const scnSel = document.getElementById('scnSel');
+        const hasGuidedValues = scnSel && scnSel.options && scnSel.options.length > 0;
+        if (!hasGuidedValues) {
+          return loadScannersFromBackend();
+        }
+        return null;
+      })
+      .then(() => loadConfigFromBackend());
+    startTerminalMirror();
+    // Auto-load results if a scan already completed before page opened
+    startRuntimeMirror();
+    resolveApiBase()
+      .then(base => {
+        if (!base) return null;
+        return apiRequest(base + '/logs', {}, 20000);
+      })
+      .then(d => {
+        if (!d) return;
+        const recentErrors = (d.logs || []).filter(l => l.level === 'ERROR' || l.level === 'WARN').slice(-3);
+        if(recentErrors.length > 0) {
+          console.log('Server logs:', d.logs);
+        }
+      })
+      .catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
